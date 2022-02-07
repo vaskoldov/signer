@@ -18,63 +18,24 @@ import java.util.Properties;
 
 public class DigitalSignatureFactory {
     private static String providerName = "JCP2";
-    private static volatile DigitalSignatureProcessor fnsProcessor = null;
-    private static volatile KeyStoreWrapper fnsKeyStoreWrapper = null;
-    private static volatile DigitalSignatureProcessor egrnProcessor = null;
-    private static volatile KeyStoreWrapper egrnKeyStoreWrapper = null;
-    private static boolean isFNSProcessorAvailable;
-    private static boolean isEGRNProcessorAvailable;
+    private static volatile DigitalSignatureProcessor signatureProcessor = null;
+    private static volatile KeyStoreWrapper keyStoreWrapper = null;
 
-    public static synchronized void init(Properties props) throws SigLibInitializationException {
-        // Формируем данные подписи ФНС
-        String fnsKeyAlias = props.getProperty("FNS_SIGN_ALIAS");
-        String fnsKeystoreName = "";
-        if (!fnsKeyAlias.isEmpty()) {
-            if (fnsKeyAlias.contains("\\")) {
-                fnsKeystoreName = fnsKeyAlias.substring(0, fnsKeyAlias.indexOf("\\"));
-            } else {
-                fnsKeystoreName = "HDImageStore";
-            }
-        }
-
-        // Формируем данные подписи ЕГРН
-        String egrnKeyAlias = props.getProperty("EGRN_SIGN_ALIAS");
-        String egrnKeystoreName = "";
-        if (!egrnKeyAlias.isEmpty()) {
-            if (egrnKeyAlias.contains("\\")) {
-                egrnKeystoreName = egrnKeyAlias.substring(0, egrnKeyAlias.indexOf("\\"));
-            } else {
-                egrnKeystoreName = "HDImageStore";
-            }
-        }
+    public static synchronized void init() throws SigLibInitializationException {
+        String keyStoreName = "HDImageStore";
 
         // Выполняем инициализацию фабрики
         System.setProperty("org.apache.xml.security.ignoreLineBreaks", "true");
         System.setProperty("org.apache.xml.security.resource.config", "resource/jcp.xml");
         initXmlSec();
 
-        // Инициализируем процессор для подписи ФНС
-        if (!fnsKeyAlias.isEmpty()) {
-            fnsProcessor = new DigitalSignatureProcessorImpl();
-            isFNSProcessorAvailable = true;
-            try {
-                fnsKeyStoreWrapper = new KeyStoreWrapperJCP(fnsKeystoreName);
-            } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
-                isFNSProcessorAvailable = false;
-            }
+        // Инициализируем процессор для подписи
+        signatureProcessor = new DigitalSignatureProcessorImpl();
+        try {
+            keyStoreWrapper = new KeyStoreWrapperJCP(keyStoreName);
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            throw new SigLibInitializationException("Ошибка при инициализации signatureProcessor");
         }
-
-        // Инициализируем процессор для подписи ЕГРН
-        if (!egrnKeyAlias.isEmpty()) {
-            egrnProcessor = new DigitalSignatureProcessorImpl();
-            isEGRNProcessorAvailable = true;
-            try {
-                egrnKeyStoreWrapper = new KeyStoreWrapperJCP(egrnKeystoreName);
-            } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
-                isEGRNProcessorAvailable = false;
-            }
-        }
-
     }
 
     private static void initXmlSec() throws SigLibInitializationException {
@@ -90,8 +51,8 @@ public class DigitalSignatureFactory {
         }
     }
 
-    public static DigitalSignatureProcessor getFNSDigitalSignatureProcessor() throws SigLibInitializationException {
-        DigitalSignatureProcessor p = fnsProcessor;
+    public static DigitalSignatureProcessor getDigitalSignatureProcessor() throws SigLibInitializationException {
+        DigitalSignatureProcessor p = signatureProcessor;
         if (p == null) {
             throw new SigLibInitializationException("Перед использованием фабрику необходимо инициализировать!");
         } else {
@@ -99,47 +60,17 @@ public class DigitalSignatureFactory {
         }
     }
 
-    public static DigitalSignatureProcessor getEGRNDigitalSignatureProcessor() {
-        DigitalSignatureProcessor p = egrnProcessor;
-        if (p == null) {
-            throw new SigLibInitializationException("Перед использованием фабрику необходимо инициализировать!");
-        } else {
-            return p;
-        }
+    public static KeyStoreWrapper getKeyStoreWrapper() throws SigLibInitializationException {
+        return getKeyStoreWrapper(null);
     }
 
-    public static KeyStoreWrapper getFNSKeyStoreWrapper() throws SigLibInitializationException {
-        return getFNSKeyStoreWrapper(null);
-    }
-
-    public static KeyStoreWrapper getFNSKeyStoreWrapper(CacheOptions options) throws SigLibInitializationException {
-        ru.hemulen.crypto.KeyStoreWrapper ks = fnsKeyStoreWrapper;
+    public static KeyStoreWrapper getKeyStoreWrapper(CacheOptions options) throws SigLibInitializationException {
+        ru.hemulen.crypto.KeyStoreWrapper ks = keyStoreWrapper;
         if (ks == null) {
             throw new SigLibInitializationException("Перед использованием фабрику необходимо инициализировать!");
         } else {
             return (options == null ? ks : new CachingKeyStoreWrapper(ks, options));
         }
-    }
-
-    public static KeyStoreWrapper getEGRNKeyStoreWrapper() throws SigLibInitializationException {
-        return getEGRNKeyStoreWrapper(null);
-    }
-
-    public static KeyStoreWrapper getEGRNKeyStoreWrapper(CacheOptions options) throws SigLibInitializationException {
-        ru.hemulen.crypto.KeyStoreWrapper ks = egrnKeyStoreWrapper;
-        if (ks == null) {
-            throw new SigLibInitializationException("Перед использованием фабрику необходимо инициализировать!");
-        } else {
-            return (options == null ? ks : new CachingKeyStoreWrapper(ks, options));
-        }
-    }
-
-    public static boolean getFNSProcessorState() {
-        return isFNSProcessorAvailable;
-    }
-
-    public static boolean getEGRNProcessorState() {
-        return isEGRNProcessorAvailable;
     }
 
 }

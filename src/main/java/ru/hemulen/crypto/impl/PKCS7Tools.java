@@ -74,7 +74,7 @@ public class PKCS7Tools {
 
     private static byte[] sign(PrivateKey key, byte[] data, String signatureAlgorithmOID) throws SignatureProcessingException {
         try {
-            KeyStoreWrapper keyStoreWrapper = DigitalSignatureFactory.getEGRNKeyStoreWrapper();
+            KeyStoreWrapper keyStoreWrapper = DigitalSignatureFactory.getKeyStoreWrapper();
             Provider provider = keyStoreWrapper.getKeyStore().getProvider();
             Signature signer = Signature.getInstance(signatureAlgorithmOID, provider);
             signer.initSign(key);
@@ -216,7 +216,7 @@ public class PKCS7Tools {
 
             Signature signature;
             try {
-                KeyStoreWrapper keyStoreWrapper = DigitalSignatureFactory.getFNSKeyStoreWrapper();
+                KeyStoreWrapper keyStoreWrapper = DigitalSignatureFactory.getKeyStoreWrapper();
                 Provider provider = keyStoreWrapper.getKeyStore().getProvider();
                 signature = Signature.getInstance(signatureAlgorithmOID, provider);
                 signature.initVerify(certificate);
