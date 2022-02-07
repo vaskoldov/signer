@@ -42,7 +42,7 @@ public class DocumentService {
 
     public DocumentService()  {
         try {
-            signer = new Signer("fsor012012", "12345678");
+            signer = new Signer("AUVOLNAMOBILE01_2023_02_22", "12345678");
         } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
 
         }
@@ -82,7 +82,7 @@ public class DocumentService {
     }
 
     public void saveClientMessage(DocumentEntity document, String clientMessage) throws FileOperationsException {
-        Path outPath = Paths.get("C:/Hemulen/fsor/integration/files/FSOR01_3T/out", document.getClientId() + ".xml");
+        Path outPath = Paths.get("/opt/adapter/integration/files/AUVOLNAMOBILE01/out", document.getClientId() + ".xml");
         FileWriter fw = null;
         try {
             fw = new FileWriter(outPath.toFile());
