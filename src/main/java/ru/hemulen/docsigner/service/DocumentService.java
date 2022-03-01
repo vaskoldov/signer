@@ -6,6 +6,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import ru.hemulen.crypto.exceptions.SignatureProcessingException;
 import ru.hemulen.docsigner.entity.DocumentEntity;
+import ru.hemulen.docsigner.entity.DocumentResponseEntity;
 import ru.hemulen.docsigner.exception.DocumentFileNotExists;
 import ru.hemulen.docsigner.exception.DocumentSignException;
 import ru.hemulen.docsigner.exception.FileOperationsException;
@@ -39,14 +40,16 @@ import java.util.UUID;
 @Service
 public class DocumentService {
     Signer signer;
-    @Value("${docsigner.containerAlias}")
     String containerAlias;
-    @Value("${docsigner.containerPassword}")
     String containerPassword;
-    @Value("${docsigner.adapterOutPath}")
     String adapterOutPath;
+    String adapterInPath;
 
     public DocumentService()  {
+        containerAlias = "fsor012012";
+        containerPassword = "12345678";
+        adapterOutPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/out";
+        adapterInPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/in";
         try {
             signer = new Signer(containerAlias, containerPassword);
 
@@ -55,20 +58,24 @@ public class DocumentService {
         }
     }
 
-    public void processDocument(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocument(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+        document.setClientId(UUID.randomUUID().toString());
         // Подписываем документ
         File signFile = signDocument(document);
         // Формируем XML c запросом
         String clientMessage = createClientMessage(document);
         saveClientMessage(document, clientMessage);
+        return  document.getClientId();
     }
 
-    public void processDocumentUKEP(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocumentUKEP(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+        document.setClientId(UUID.randomUUID().toString());
         // Подписываем документ
         File signFile = signDocument(document);
         // Формируем XML c запросом
         String clientMessage = createClientMessageUKEP(document);
         saveClientMessage(document, clientMessage);
+        return document.getClientId();
     }
     private File signDocument (DocumentEntity document) throws DocumentFileNotExists, DocumentSignException {
         File documentFile = Paths.get(document.getDocumentPath()).toFile();
@@ -77,7 +84,7 @@ public class DocumentService {
         }
         try {
             // Копируем подписываемый файл в каталог ./signed/[OID]
-            Path targetPath = Paths.get(documentFile.toPath().getParent().toString(), "signed", document.getOid());
+            Path targetPath = Paths.get(documentFile.toPath().getParent().toString(), "signed", document.getClientId());
             File targetFile = Paths.get(targetPath.toString(), documentFile.getName()).toFile();
             if (!targetPath.getParent().toFile().exists()) {
                 Files.createDirectory(targetPath.getParent());
@@ -111,8 +118,7 @@ public class DocumentService {
     private String createClientMessage(DocumentEntity document) throws XMLTransformationException {
         try {
             // Определяем переменные, которые будут использоваться в запросе
-            String clientIdValue = UUID.randomUUID().toString();
-            document.setClientId(clientIdValue);
+            String clientIdValue = document.getClientId();
             String contractUUID = UUID.randomUUID().toString();
             String signUUID = UUID.randomUUID().toString();
             String currentTime = getCurrentTimestamp();
@@ -204,8 +210,7 @@ public class DocumentService {
     private String createClientMessageUKEP(DocumentEntity document) throws XMLTransformationException {
         try {
             // Определяем переменные, которые будут использоваться в запросе
-            String clientIdValue = UUID.randomUUID().toString();
-            document.setClientId(clientIdValue);
+            String clientIdValue = document.getClientId();
             String contractUUID = UUID.randomUUID().toString();
             String signUUID = UUID.randomUUID().toString();
             String currentTime = getCurrentTimestamp();

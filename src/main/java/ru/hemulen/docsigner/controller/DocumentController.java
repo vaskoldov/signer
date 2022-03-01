@@ -1,12 +1,15 @@
 package ru.hemulen.docsigner.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import ru.hemulen.docsigner.entity.Content;
 import ru.hemulen.docsigner.entity.DocumentEntity;
+import ru.hemulen.docsigner.entity.DocumentResponseEntity;
+import ru.hemulen.docsigner.entity.Error;
 import ru.hemulen.docsigner.exception.DocumentFileNotExists;
 import ru.hemulen.docsigner.exception.DocumentSignException;
 import ru.hemulen.docsigner.exception.FileOperationsException;
@@ -19,20 +22,28 @@ public class DocumentController {
     @Autowired
     private DocumentService documentService;
 
-    @PostMapping(value = "unep", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity sendDocument(@RequestBody DocumentEntity document, @RequestParam MultipartFile file) {
+    @PostMapping(value = "unep")
+    public ResponseEntity sendDocument(@RequestBody DocumentEntity document) {
         try {
-            System.out.println(file.getName());
             documentService.processDocument(document);
-            return ResponseEntity.ok("Документ подписан и отправлен в СМЭВ");
+            DocumentResponseEntity response = new DocumentResponseEntity(new Content(document.getClientId()));
+            return ResponseEntity.ok(response);
         } catch (DocumentFileNotExists e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("DOCUMENT_NOT_EXISTS",
+                    String.format("По указанному пути - %s - файл документа не найден", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (DocumentSignException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("SIGN_ERROR",
+                    String.format("Не удалось подписать файл %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (FileOperationsException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("FILE_MOVE_ERROR",
+                    String.format("Не удалось переместить файл %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (XMLTransformationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("XML_ERROR",
+                    String.format("Не удалось сформировать ClientMessage для файла %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         }
 
     }
@@ -41,16 +52,26 @@ public class DocumentController {
     public ResponseEntity sendDocumentUKEP(@RequestBody DocumentEntity document) {
         try {
             documentService.processDocumentUKEP(document);
-            return ResponseEntity.ok("Документ подписан и отправлен в СМЭВ");
+            DocumentResponseEntity response = new DocumentResponseEntity(new Content(document.getClientId()));
+            return ResponseEntity.ok(response);
         } catch (DocumentFileNotExists e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("DOCUMENT_NOT_EXISTS",
+                    String.format("По указанному пути - %s - файл документа не найден", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (DocumentSignException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("SIGN_ERROR",
+                    String.format("Не удалось подписать файл %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (FileOperationsException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("FILE_MOVE_ERROR",
+                    String.format("Не удалось переместить файл %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         } catch (XMLTransformationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            DocumentResponseEntity response = new DocumentResponseEntity(new Error("XML_ERROR",
+                    String.format("Не удалось сформировать ClientMessage для файла %s", document.getDocumentPath())));
+            return ResponseEntity.badRequest().body(response);
         }
-
     }
+
+
 }
