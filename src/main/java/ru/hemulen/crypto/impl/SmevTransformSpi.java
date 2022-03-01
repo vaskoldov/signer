@@ -53,14 +53,6 @@ public class SmevTransformSpi extends TransformSpi {
 		}
 	};
 
-	/*static {
-		logger.info("Loading SmevTransformSpi");
-	}
-	
-	public SmevTransformSpi() {
-		logger.info("Creating new instance of " + SmevTransformSpi.class.getCanonicalName());
-	}*/
-	
 	@Override
 	protected String engineGetURI() {
 		return ALGORITHM_URN;

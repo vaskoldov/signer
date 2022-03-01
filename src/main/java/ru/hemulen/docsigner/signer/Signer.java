@@ -40,7 +40,7 @@ public class Signer {
         InputStream inputStream = new FileInputStream(file2sign);
         byte[] result = digitalSignatureProcessor.signPKCS7Detached(inputStream, privateKey, certificate);
         // Файл с подписью создается в том же каталоге и с тем же именем, но с расширением sig
-        String signFileName = file2sign.toString() + ".sig";
+        String signFileName = file2sign + ".sig";
         File signFile = new File(signFileName);
         FileOutputStream signOutputStream = new FileOutputStream(signFile);
         signOutputStream.write(Base64.getEncoder().encode(result));

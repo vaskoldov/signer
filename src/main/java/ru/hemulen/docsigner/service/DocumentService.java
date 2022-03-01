@@ -1,5 +1,6 @@
 package ru.hemulen.docsigner.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -11,7 +12,6 @@ import ru.hemulen.docsigner.exception.FileOperationsException;
 import ru.hemulen.docsigner.exception.XMLTransformationException;
 import ru.hemulen.docsigner.signer.Signer;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
@@ -39,10 +39,17 @@ import java.util.UUID;
 @Service
 public class DocumentService {
     Signer signer;
+    @Value("${docsigner.containerAlias}")
+    String containerAlias;
+    @Value("${docsigner.containerPassword}")
+    String containerPassword;
+    @Value("${docsigner.adapterOutPath}")
+    String adapterOutPath;
 
     public DocumentService()  {
         try {
-            signer = new Signer("AUVOLNAMOBILE01_2023_02_22", "12345678");
+            signer = new Signer(containerAlias, containerPassword);
+
         } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
 
         }
@@ -53,6 +60,14 @@ public class DocumentService {
         File signFile = signDocument(document);
         // Формируем XML c запросом
         String clientMessage = createClientMessage(document);
+        saveClientMessage(document, clientMessage);
+    }
+
+    public void processDocumentUKEP(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+        // Подписываем документ
+        File signFile = signDocument(document);
+        // Формируем XML c запросом
+        String clientMessage = createClientMessageUKEP(document);
         saveClientMessage(document, clientMessage);
     }
     private File signDocument (DocumentEntity document) throws DocumentFileNotExists, DocumentSignException {
@@ -82,7 +97,7 @@ public class DocumentService {
     }
 
     public void saveClientMessage(DocumentEntity document, String clientMessage) throws FileOperationsException {
-        Path outPath = Paths.get("/opt/adapter/integration/files/AUVOLNAMOBILE01/out", document.getClientId() + ".xml");
+        Path outPath = Paths.get(adapterOutPath, document.getClientId() + ".xml");
         FileWriter fw = null;
         try {
             fw = new FileWriter(outPath.toFile());
@@ -124,6 +139,99 @@ public class DocumentService {
             content.appendChild(messagePrimaryContent);
             // ======= Бизнес-запрос вида сведений =======
             Element requestSigContract = root.createElementNS("urn://gosuslugi/sig-contract/1.0.2", "sig:RequestSigContract");
+            requestSigContract.setAttribute("Id", "ID_" + clientIdValue);
+            requestSigContract.setAttribute("timestamp", currentTime);
+            requestSigContract.setAttribute("routeNumber", "MNSV03");
+            messagePrimaryContent.appendChild(requestSigContract);
+            Element OID = root.createElement("sig:OID");
+            OID.appendChild(root.createTextNode(document.getOid()));
+            requestSigContract.appendChild(OID);
+            Element signExp = root.createElement("sig:signExp");
+            signExp.appendChild(root.createTextNode(expireTime));
+            requestSigContract.appendChild(signExp);
+            Element descDoc = root.createElement("sig:descDoc");
+            descDoc.appendChild(root.createTextNode(document.getDescDoc()));
+            requestSigContract.appendChild(descDoc);
+            Element contracts = root.createElement("sig:Contracts");
+            requestSigContract.appendChild(contracts);
+            Element contract = root.createElement("sig:Contract");
+            contracts.appendChild(contract);
+            Element docElement = root.createElement("sig:Document");
+            docElement.setAttribute("docId", document.getDocumentId());
+            docElement.setAttribute("mimeType", "application/pdf");
+            docElement.setAttribute("uuid", contractUUID);
+            docElement.setAttribute("description", document.getDocumentDescription());
+            contract.appendChild(docElement);
+            Element signElement = root.createElement("sig:Signature");
+            signElement.setAttribute("docId", "Подпись оператора");
+            signElement.setAttribute("mimeType", "application/sig");
+            signElement.setAttribute("uuid", signUUID);
+            contract.appendChild(signElement);
+            Element backlink = root.createElement("sig:Backlink");
+            backlink.appendChild(root.createTextNode("https://volnamobile.ru/"));
+            requestSigContract.appendChild(backlink);
+            // ========== Блок вложений ClientMessage =========
+            Element attachmentHeaderList = root.createElement("tns:AttachmentHeaderList");
+            content.appendChild(attachmentHeaderList);
+            Element docAttachmentHeader = root.createElement("tns:AttachmentHeader");
+            attachmentHeaderList.appendChild(docAttachmentHeader);
+            Element contractId = root.createElement("tns:Id");
+            contractId.appendChild(root.createTextNode(contractUUID));
+            docAttachmentHeader.appendChild(contractId);
+            Element docPath = root.createElement("tns:filePath");
+            docPath.appendChild(root.createTextNode(document.getDocumentPath()));
+            docAttachmentHeader.appendChild(docPath);
+            Element docTransferMethod = root.createElement("tns:TransferMethod");
+            docTransferMethod.appendChild(root.createTextNode("REFERENCE"));
+            docAttachmentHeader.appendChild(docTransferMethod);
+            Element signAttachmentHeader = root.createElement("tns:AttachmentHeader");
+            attachmentHeaderList.appendChild(signAttachmentHeader);
+            Element signId = root.createElement("tns:Id");
+            signId.appendChild(root.createTextNode(signUUID));
+            signAttachmentHeader.appendChild(signId);
+            Element signPath = root.createElement("tns:filePath");
+            signPath.appendChild(root.createTextNode(document.getDocumentPath() + ".sig"));
+            signAttachmentHeader.appendChild(signPath);
+            Element signTransferMethod = root.createElement("tns:TransferMethod");
+            signTransferMethod.appendChild(root.createTextNode("REFERENCE"));
+            signAttachmentHeader.appendChild(signTransferMethod);
+            return getStringFromDocument(root);
+        } catch (ParserConfigurationException | TransformerException | ParseException e) {
+            throw new XMLTransformationException("Не удалось сформировать XML с запросом");
+        }
+    }
+
+    private String createClientMessageUKEP(DocumentEntity document) throws XMLTransformationException {
+        try {
+            // Определяем переменные, которые будут использоваться в запросе
+            String clientIdValue = UUID.randomUUID().toString();
+            document.setClientId(clientIdValue);
+            String contractUUID = UUID.randomUUID().toString();
+            String signUUID = UUID.randomUUID().toString();
+            String currentTime = getCurrentTimestamp();
+            String expireTime = getExpireTimestamp(currentTime);
+            // ========= Заголовок ClientMessage и метаданные запроса =========
+            Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            Element rootElement = root.createElementNS("urn://x-artefacts-smev-gov-ru/services/service-adapter/types", "tns:ClientMessage");
+            root.appendChild(rootElement);
+            Element itSystem = root.createElement("tns:itSystem");
+            itSystem.appendChild(root.createTextNode(document.getMnemonic()));
+            rootElement.appendChild(itSystem);
+            Element requestMessage = root.createElement("tns:RequestMessage");
+            rootElement.appendChild(requestMessage);
+            Element requestMetadata = root.createElement("tns:RequestMetadata");
+            requestMessage.appendChild(requestMetadata);
+            Element clientId = root.createElement("tns:clientId");
+            clientId.appendChild(root.createTextNode(clientIdValue));
+            requestMetadata.appendChild(clientId);
+            Element requestContent = root.createElement("tns:RequestContent");
+            requestMessage.appendChild(requestContent);
+            Element content = root.createElement("tns:content");
+            requestContent.appendChild(content);
+            Element messagePrimaryContent = root.createElement("tns:MessagePrimaryContent");
+            content.appendChild(messagePrimaryContent);
+            // ======= Бизнес-запрос вида сведений =======
+            Element requestSigContract = root.createElementNS("urn://gosuslugi/sig-contract-ukep/1.0.0", "sig:RequestSignUkep");
             requestSigContract.setAttribute("Id", "ID_" + clientIdValue);
             requestSigContract.setAttribute("timestamp", currentTime);
             requestSigContract.setAttribute("routeNumber", "MNSV03");
