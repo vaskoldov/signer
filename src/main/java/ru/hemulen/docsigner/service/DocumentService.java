@@ -1,12 +1,9 @@
 package ru.hemulen.docsigner.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import ru.hemulen.crypto.exceptions.SignatureProcessingException;
-import ru.hemulen.docsigner.entity.DocumentEntity;
-import ru.hemulen.docsigner.entity.DocumentResponseEntity;
+import ru.hemulen.docsigner.model.Document;
 import ru.hemulen.docsigner.exception.DocumentFileNotExists;
 import ru.hemulen.docsigner.exception.DocumentSignException;
 import ru.hemulen.docsigner.exception.FileOperationsException;
@@ -43,22 +40,22 @@ public class DocumentService {
     String containerAlias;
     String containerPassword;
     String adapterOutPath;
-    String adapterInPath;
 
     public DocumentService()  {
-        containerAlias = "fsor012012";
+//        containerAlias = "fsor012012";
+//        containerPassword = "12345678";
+//        adapterOutPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/out";
+//        adapterInPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/in";
+        containerAlias = "AUVOLNAMOBILE01_2023_02_22";
         containerPassword = "12345678";
-        adapterOutPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/out";
-        adapterInPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/in";
+        adapterOutPath = "/opt/adapter/integration/files/AUVOLNAMOBILE01/out";
         try {
             signer = new Signer(containerAlias, containerPassword);
 
-        } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
-
-        }
+        } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {}
     }
 
-    public String processDocument(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocument(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
         document.setClientId(UUID.randomUUID().toString());
         // Подписываем документ
         File signFile = signDocument(document);
@@ -68,7 +65,7 @@ public class DocumentService {
         return  document.getClientId();
     }
 
-    public String processDocumentUKEP(DocumentEntity document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocumentUKEP(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
         document.setClientId(UUID.randomUUID().toString());
         // Подписываем документ
         File signFile = signDocument(document);
@@ -77,7 +74,7 @@ public class DocumentService {
         saveClientMessage(document, clientMessage);
         return document.getClientId();
     }
-    private File signDocument (DocumentEntity document) throws DocumentFileNotExists, DocumentSignException {
+    private File signDocument (Document document) throws DocumentFileNotExists, DocumentSignException {
         File documentFile = Paths.get(document.getDocumentPath()).toFile();
         if (!documentFile.exists()) {
             throw new DocumentFileNotExists("Указанный файл c документом не найден");
@@ -103,7 +100,7 @@ public class DocumentService {
         }
     }
 
-    public void saveClientMessage(DocumentEntity document, String clientMessage) throws FileOperationsException {
+    public void saveClientMessage(Document document, String clientMessage) throws FileOperationsException {
         Path outPath = Paths.get(adapterOutPath, document.getClientId() + ".xml");
         FileWriter fw = null;
         try {
@@ -115,7 +112,7 @@ public class DocumentService {
         }
     }
 
-    private String createClientMessage(DocumentEntity document) throws XMLTransformationException {
+    private String createClientMessage(Document document) throws XMLTransformationException {
         try {
             // Определяем переменные, которые будут использоваться в запросе
             String clientIdValue = document.getClientId();
@@ -124,7 +121,7 @@ public class DocumentService {
             String currentTime = getCurrentTimestamp();
             String expireTime = getExpireTimestamp(currentTime);
             // ========= Заголовок ClientMessage и метаданные запроса =========
-            Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            org.w3c.dom.Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element rootElement = root.createElementNS("urn://x-artefacts-smev-gov-ru/services/service-adapter/types", "tns:ClientMessage");
             root.appendChild(rootElement);
             Element itSystem = root.createElement("tns:itSystem");
@@ -207,7 +204,7 @@ public class DocumentService {
         }
     }
 
-    private String createClientMessageUKEP(DocumentEntity document) throws XMLTransformationException {
+    private String createClientMessageUKEP(Document document) throws XMLTransformationException {
         try {
             // Определяем переменные, которые будут использоваться в запросе
             String clientIdValue = document.getClientId();
@@ -216,7 +213,7 @@ public class DocumentService {
             String currentTime = getCurrentTimestamp();
             String expireTime = getExpireTimestamp(currentTime);
             // ========= Заголовок ClientMessage и метаданные запроса =========
-            Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            org.w3c.dom.Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element rootElement = root.createElementNS("urn://x-artefacts-smev-gov-ru/services/service-adapter/types", "tns:ClientMessage");
             root.appendChild(rootElement);
             Element itSystem = root.createElement("tns:itSystem");
@@ -299,7 +296,7 @@ public class DocumentService {
         }
     }
 
-    private String getStringFromDocument(Document doc) throws TransformerException {
+    private String getStringFromDocument(org.w3c.dom.Document doc) throws TransformerException {
         DOMSource domSource = new DOMSource(doc);
         StringWriter writer = new StringWriter();
         StreamResult result = new StreamResult(writer);

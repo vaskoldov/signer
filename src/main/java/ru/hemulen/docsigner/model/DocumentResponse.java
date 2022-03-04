@@ -1,14 +1,14 @@
-package ru.hemulen.docsigner.entity;
+package ru.hemulen.docsigner.model;
 
-public class DocumentResponseEntity {
+public class DocumentResponse {
     private Content content;
     private Error error;
 
-    public DocumentResponseEntity(Content content) {
+    public DocumentResponse(Content content) {
         this.content = content;
     }
 
-    public DocumentResponseEntity(Error error) {
+    public DocumentResponse(Error error) {
         this.error = error;
     }
 

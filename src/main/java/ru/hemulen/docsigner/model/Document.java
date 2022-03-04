@@ -1,7 +1,7 @@
-package ru.hemulen.docsigner.entity;
+package ru.hemulen.docsigner.model;
 
 
-public class DocumentEntity {
+public class Document {
     private String mnemonic;
     private String oid;
     private String descDoc;
@@ -10,7 +10,7 @@ public class DocumentEntity {
     private String documentDescription;
     private String clientId;
 
-    public DocumentEntity() {
+    public Document() {
     }
 
     public String getMnemonic() {
