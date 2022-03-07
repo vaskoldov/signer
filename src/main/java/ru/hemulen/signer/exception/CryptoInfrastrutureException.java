@@ -1,4 +1,4 @@
-package ru.hemulen.docsigner.exception;
+package ru.hemulen.signer.exception;
 
 public class CryptoInfrastrutureException extends Exception {
     public CryptoInfrastrutureException(String message) {
