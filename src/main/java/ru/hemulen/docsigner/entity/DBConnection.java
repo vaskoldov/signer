@@ -1,16 +1,24 @@
 package ru.hemulen.docsigner.entity;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.*;
+import java.util.Properties;
 
 public class DBConnection implements AutoCloseable {
     private Connection connection;
     public DBConnection() {
-        //String dbURL = "jdbc:postgresql://localhost:5432/adapter";
-        //String dbUser = "smev";
-        //String dbPass = "smev";
-        String dbURL = "jdbc:postgresql://10.82.10.58:5432/smev_adapter_1";
-        String dbUser = "smev_adapter";
-        String dbPass = "sQ38FyPy}WfZ";
+        Properties props = new Properties();
+        try {
+            props.load(new FileInputStream("./config/config.ini"));
+        } catch (IOException e) {
+            System.err.println("Не удалось загрузить конфигурационный файл");
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+        String dbURL = props.getProperty("DB_URL");
+        String dbUser = props.getProperty("DB_USER");
+        String dbPass = props.getProperty("DB_PASS");
         try {
             Class.forName("org.postgresql.Driver");
             connection = DriverManager.getConnection(dbURL, dbUser, dbPass);
@@ -27,10 +35,10 @@ public class DBConnection implements AutoCloseable {
     }
     public ResultSet getAnswers(String clientId) {
         try {
-            String sql = String.format("select mm.id, mm.message_id , mc.\"mode\" , mc.\"content\" \n" +
+            String sql = String.format("select mm.id, mm.message_id , mm.sending_date, mc.\"mode\" , mc.\"content\" \n" +
                     "from core.message_metadata mm \n" +
                     "inner join core.message_content mc on mc.id = mm.id \n" +
-                    "where mm.reference_id = '%s';", clientId);
+                    "where mm.reference_id = '%s' order by mm.creation_date;", clientId);
             Statement statement = connection.createStatement();
             return statement.executeQuery(sql);
         } catch (SQLException e) {

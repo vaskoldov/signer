@@ -17,10 +17,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,9 +28,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class DocumentService {
@@ -40,25 +36,55 @@ public class DocumentService {
     String containerAlias;
     String containerPassword;
     String adapterOutPath;
+    Base64.Decoder decoder;
+    Base64.Encoder encoder;
 
     public DocumentService()  {
-//        containerAlias = "fsor012012";
-//        containerPassword = "12345678";
-//        adapterOutPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/out";
-//        adapterInPath = "C:/Hemulen/fsor/integration/files/FSOR01_3T/in";
-        containerAlias = "AUVOLNAMOBILE01_2023_02_22";
-        containerPassword = "12345678";
-        adapterOutPath = "/opt/adapter/integration/files/AUVOLNAMOBILE01/out";
+        Properties props = new Properties();
+        try {
+            props.load(new FileInputStream("./config/config.ini"));
+        } catch (IOException e) {
+            System.err.println("Не удалось загрузить конфигурационный файл");
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+        containerAlias = props.getProperty("CONTAINER_ALIAS");
+        containerPassword = props.getProperty("CONTAINER_PASSWORD");
+        adapterOutPath = props.getProperty("ADAPTER_OUT_PATH");
         try {
             signer = new Signer(containerAlias, containerPassword);
 
         } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {}
+        decoder = Base64.getDecoder();
+        encoder = Base64.getEncoder();
     }
 
     public String processDocument(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
         document.setClientId(UUID.randomUUID().toString());
+        // Проверяем наличие файла с документом в каталоге
+        File documentFile = new File(document.getDocumentPath());
+        if (!documentFile.exists()) {
+            // Если файл не сохранен перед вызовом метода, то записываем в него содержимое элемента documentContent
+            String documentContent = document.getDocumentContent();
+            if (documentContent == null || documentContent.length() == 0) {
+                throw new DocumentFileNotExists("Отсутствует содержимое файла в параметре documentContent");
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(document.getDocumentPath());
+                InputStream is = decoder.wrap(new ByteArrayInputStream(documentContent.getBytes(StandardCharsets.UTF_8)));
+                int _byte;
+                while ((_byte = is.read()) != -1) {
+                    fos.write(_byte);
+                }
+                fos.close();
+            } catch (IOException e) {
+                throw new FileOperationsException("Не удалось сохранить содержимое документа в файл.");
+            }
+        }
         // Подписываем документ
         File signFile = signDocument(document);
+        // Кодируем подпись в base64 и возвращаем в ответе
+        document.setSignContent(getFileContentEncoded(signFile));
         // Формируем XML c запросом
         String clientMessage = createClientMessage(document);
         saveClientMessage(document, clientMessage);
@@ -67,6 +93,26 @@ public class DocumentService {
 
     public String processDocumentUKEP(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
         document.setClientId(UUID.randomUUID().toString());
+        // Проверяем наличие файла с документом в каталоге
+        File documentFile = new File(document.getDocumentPath());
+        if (!documentFile.exists()) {
+            // Если файл не сохранен перед вызовом метода, то записываем в него содержимое элемента documentContent
+            String documentContent = document.getDocumentContent();
+            if (documentContent == null || documentContent.length() == 0) {
+                throw new DocumentFileNotExists("Отсутствует содержимое файла в параметре documentContent");
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(document.getDocumentPath());
+                InputStream is = decoder.wrap(new ByteArrayInputStream(documentContent.getBytes(StandardCharsets.UTF_8)));
+                int _byte;
+                while ((_byte = is.read()) != -1) {
+                    fos.write(_byte);
+                }
+                fos.close();
+            } catch (IOException e) {
+                throw new FileOperationsException("Не удалось сохранить содержимое документа в файл.");
+            }
+        }
         // Подписываем документ
         File signFile = signDocument(document);
         // Формируем XML c запросом
@@ -318,5 +364,20 @@ public class DocumentService {
         expired.setTime(current);
         expired.add(Calendar.DATE, 14); // У абонента есть две недели на подписание документа
         return dateFormat.format(expired.getTime());
+    }
+
+    private String getFileContentEncoded(File file) throws FileOperationsException {
+        try {
+            FileInputStream fis = new FileInputStream(file);
+            OutputStream os = encoder.wrap(new ByteArrayOutputStream());
+            int _byte;
+            while ((_byte = fis.read()) != -1) {
+                os.write(_byte);
+            }
+            os.close();
+            return "";
+        } catch (IOException e) {
+            throw new FileOperationsException("Не удалось получить закодированное содержимое файла.");
+        }
     }
 }

@@ -26,7 +26,7 @@ public class DocumentController {
     public ResponseEntity sendDocument(@RequestBody Document document) {
         try {
             documentService.processDocument(document);
-            DocumentResponse response = new DocumentResponse(new Content(document.getClientId()));
+            DocumentResponse response = new DocumentResponse(new Content(document));
             return ResponseEntity.ok(response);
         } catch (DocumentFileNotExists e) {
             DocumentResponse response = new DocumentResponse(new Error("DOCUMENT_NOT_EXISTS",
@@ -52,7 +52,7 @@ public class DocumentController {
     public ResponseEntity sendDocumentUKEP(@RequestBody Document document) {
         try {
             documentService.processDocumentUKEP(document);
-            DocumentResponse response = new DocumentResponse(new Content(document.getClientId()));
+            DocumentResponse response = new DocumentResponse(new Content(document));
             return ResponseEntity.ok(response);
         } catch (DocumentFileNotExists e) {
             DocumentResponse response = new DocumentResponse(new Error("DOCUMENT_NOT_EXISTS",

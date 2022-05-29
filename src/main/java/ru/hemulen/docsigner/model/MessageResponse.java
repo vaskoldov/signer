@@ -1,6 +1,7 @@
 package ru.hemulen.docsigner.model;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.hemulen.docsigner.exception.ResponseParseException;
 
@@ -11,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 public class MessageResponse {
@@ -19,18 +21,21 @@ public class MessageResponse {
     private String type;
     private String code;
     private String description;
+    private String timestamp;
+    private Boolean signRejected;
     private ArrayList<String> attachments;
+    private Document xmlDocument;
+    private DocumentBuilderFactory factory;
 
     public MessageResponse() {
+        factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        factory.setCoalescing(true);
+        factory.setIgnoringElementContentWhitespace(true);
         attachments = new ArrayList<>();
     }
 
     public void parseStatus(String xml) throws ResponseParseException {
-        Document xmlDocument;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setCoalescing(true);
-        factory.setIgnoringElementContentWhitespace(true);
         InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         XPath xPath = XPathFactory.newInstance().newXPath();
         XPathExpression xPathExpression;
@@ -49,11 +54,6 @@ public class MessageResponse {
     }
 
     public void parseReject(String xml) throws ResponseParseException {
-        Document xmlDocument;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setCoalescing(true);
-        factory.setIgnoringElementContentWhitespace(true);
         InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         XPath xPath = XPathFactory.newInstance().newXPath();
         XPathExpression xPathExpression;
@@ -71,11 +71,6 @@ public class MessageResponse {
         }
     }
     public void parseError(String xml) throws ResponseParseException {
-        Document xmlDocument;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setCoalescing(true);
-        factory.setIgnoringElementContentWhitespace(true);
         InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         XPath xPath = XPathFactory.newInstance().newXPath();
         XPathExpression xPathExpression;
@@ -92,6 +87,34 @@ public class MessageResponse {
             throw new ResponseParseException(String.format("Ошибка при чтении ответа c cleintId %s из XML", clientId));
         }
     }
+
+    public void parseMessage(String xml) throws ResponseParseException {
+        InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        XPathExpression xPathExpression;
+        String query;
+        try {
+            xmlDocument = factory.newDocumentBuilder().parse(is);
+            query = "/*[local-name()='ResponseSigContract']/@timestamp";
+            xPathExpression = xPath.compile(query);
+            timestamp = (String) xPathExpression.evaluate(xmlDocument.getDocumentElement(), XPathConstants.STRING);
+            query = "//*[local-name()='SignReject']";
+            xPathExpression = xPath.compile(query);
+            NodeList nodeList = (NodeList) xPathExpression.evaluate(xmlDocument.getDocumentElement(), XPathConstants.NODESET);
+            if (nodeList.getLength() > 0) {
+                signRejected = true;
+            }
+            query = "/*[local-name()='ResponseSigContract']/*[local-name()='Error']/*[local-name()='ErrorCode']/text()";
+            xPathExpression = xPath.compile(query);
+            code = (String) xPathExpression.evaluate(xmlDocument.getDocumentElement(), XPathConstants.STRING);
+            query = "/*[local-name()='ResponseSigContract']/*[local-name()='Error']/*[local-name()='ErrorMessage']/text()";
+            xPathExpression = xPath.compile(query);
+            description = (String) xPathExpression.evaluate(xmlDocument.getDocumentElement(), XPathConstants.STRING);
+        } catch (ParserConfigurationException | XPathExpressionException | IOException | SAXException e) {
+            throw new ResponseParseException(String.format("Ошибка при чтении ответа c cleintId %s из XML", clientId));
+        }
+    }
+
     public String getClientId() {
         return clientId;
     }
@@ -138,6 +161,26 @@ public class MessageResponse {
 
     public ArrayList<String> getAttachments(){
         return attachments;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Timestamp timestamp) {
+        if (timestamp != null) {
+            this.timestamp = timestamp.toString();
+        } else {
+            this.timestamp = null;
+        }
+    }
+
+    public Boolean getSignRejected() {
+        return signRejected;
+    }
+
+    public void setSignRejected(Boolean signRejected) {
+        this.signRejected = signRejected;
     }
 
 

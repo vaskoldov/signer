@@ -7,10 +7,28 @@ public class Document {
     private String descDoc;
     private String documentId;
     private String documentPath;
+    private String documentContent;
     private String documentDescription;
     private String clientId;
+    private String signContent;
 
     public Document() {
+    }
+
+    public String getSignContent() {
+        return signContent;
+    }
+
+    public void setSignContent(String signContent) {
+        this.signContent = signContent;
+    }
+
+    public String getDocumentContent() {
+        return documentContent;
+    }
+
+    public void setDocumentContent(String documentContent) {
+        this.documentContent = documentContent;
     }
 
     public String getMnemonic() {

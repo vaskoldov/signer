@@ -30,14 +30,18 @@ public class StatusService {
                 switch (messageResponse.getType()) {
                     case "STATUS":
                         messageResponse.parseStatus(resultSet.getString("content"));
+                        messageResponse.setTimestamp(resultSet.getTimestamp("sending_date"));
                         break;
                     case "REJECT":
                         messageResponse.parseReject(resultSet.getString("content"));
+                        messageResponse.setTimestamp(resultSet.getTimestamp("sending_date"));
                         break;
                     case "ERROR":
                         messageResponse.parseError(resultSet.getString("content"));
+                        messageResponse.setTimestamp(resultSet.getTimestamp("sending_date"));
                         break;
                     case "MESSAGE":
+                        messageResponse.parseMessage(resultSet.getString("content"));
                         ResultSet attachments = connection.getAttachments(messageResponse.getClientId());
                         String attachmentPath;
                         while (attachments.next()) {
