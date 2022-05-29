@@ -1,10 +1,10 @@
-package ru.hemulen.docsigner;
+package ru.hemulen.signer;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DocsignerApplicationTests {
+class SignerApplicationTests {
 
 	@Test
 	void contextLoads() {
