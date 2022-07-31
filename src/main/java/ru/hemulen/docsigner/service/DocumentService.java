@@ -8,7 +8,7 @@ import ru.hemulen.docsigner.exception.DocumentFileNotExists;
 import ru.hemulen.docsigner.exception.DocumentSignException;
 import ru.hemulen.docsigner.exception.FileOperationsException;
 import ru.hemulen.docsigner.exception.XMLTransformationException;
-import ru.hemulen.docsigner.signer.Signer;
+import ru.hemulen.signer.Signer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;

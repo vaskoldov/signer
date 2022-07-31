@@ -1,13 +1,14 @@
-package ru.hemulen.signer;
+package ru.hemulen.docsigner;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SignerApplication {
+public class DocsignerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SignerApplication.class, args);
+		SpringApplication.run(DocsignerApplication.class, args);
 	}
 
 }

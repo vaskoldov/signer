@@ -1,4 +1,4 @@
-package ru.hemulen.signer.signer;
+package ru.hemulen.signer;
 
 import org.w3c.dom.Element;
 import ru.hemulen.crypto.DigitalSignatureFactory;

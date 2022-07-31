@@ -1,4 +1,4 @@
-package ru.hemulen.signer.exception;
+package ru.hemulen.docsigner.exception;
 
 public class DocumentFileNotExists extends Exception{
     public DocumentFileNotExists(String message) {

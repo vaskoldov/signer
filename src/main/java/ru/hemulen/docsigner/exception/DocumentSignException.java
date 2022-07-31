@@ -1,4 +1,4 @@
-package ru.hemulen.signer.exception;
+package ru.hemulen.docsigner.exception;
 
 public class DocumentSignException extends Exception{
     public DocumentSignException(String message) {
