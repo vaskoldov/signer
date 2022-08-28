@@ -6,14 +6,27 @@ import ru.hemulen.docsigner.exception.ResponseParseException;
 import ru.hemulen.docsigner.model.MessageResponse;
 import ru.hemulen.docsigner.model.StatusResponse;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Properties;
 
 @Service
 public class StatusService {
     private DBConnection connection;
+    private String attachmentsInPath;
 
     public StatusService() {
+        Properties props = new Properties();
+        try {
+            props.load(new FileInputStream("./config/config.ini"));
+        } catch (IOException e) {
+            System.err.println("Не удалось загрузить конфигурационный файл");
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+        attachmentsInPath = props.getProperty("ATTACHMENT_IN_PATH");
         this.connection = new DBConnection();
     }
 
@@ -45,7 +58,11 @@ public class StatusService {
                         ResultSet attachments = connection.getAttachments(messageResponse.getClientId());
                         String attachmentPath;
                         while (attachments.next()) {
-                            attachmentPath = "/opt/adapter/data/4.0.3/base-storage/in/" + messageResponse.getClientId() + "/" + attachments.getString("file_name");
+                            //attachmentPath = attachmentsInPath + messageResponse.getClientId() + "/" + attachments.getString("file_name"); - это не работает в версии 2.3.1
+                            attachmentPath = attachmentsInPath + "/" +
+                                    attachments.getString("id") + "/" +
+                                    messageResponse.getClientId() + "/" +
+                                    attachments.getString("file_name");
                             messageResponse.setAttachment(attachmentPath);
                         }
                 }

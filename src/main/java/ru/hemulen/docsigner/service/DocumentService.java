@@ -36,6 +36,8 @@ public class DocumentService {
     String containerAlias;
     String containerPassword;
     String adapterOutPath;
+    String attachmentOutPath;
+    String backLinkURL;
     Base64.Decoder decoder;
     Base64.Encoder encoder;
 
@@ -51,6 +53,8 @@ public class DocumentService {
         containerAlias = props.getProperty("CONTAINER_ALIAS");
         containerPassword = props.getProperty("CONTAINER_PASSWORD");
         adapterOutPath = props.getProperty("ADAPTER_OUT_PATH");
+        attachmentOutPath = props.getProperty("ATTACHMENT_OUT_PATH");
+        backLinkURL = props.getProperty("BACK_LINK");
         try {
             signer = new Signer(containerAlias, containerPassword);
 
@@ -138,9 +142,17 @@ public class DocumentService {
             Files.move(documentFile.toPath(), targetFile.toPath());
             documentFile = targetFile;
             // Обновляем местоположение файла в документе тоже
-            document.setDocumentPath(documentFile.getPath());
+            // document.setDocumentPath(documentFile.getPath());
             File docSign = signer.signPKCS7Detached(documentFile);
-            return docSign;
+            // Копируем подписанный файл и подпись в local-storage
+            Path attachmentPath = Paths.get(attachmentOutPath, document.getClientId());
+            Files.createDirectory(attachmentPath);
+            Path attachmentFile = attachmentPath.resolve(documentFile.getName());
+            Path attachmentSign = attachmentPath.resolve(docSign.getName());
+            Files.copy(documentFile.toPath(), attachmentFile);
+            Files.copy(docSign.toPath(), attachmentSign);
+            document.setDocumentPath(attachmentFile.toString());
+            return attachmentSign.toFile();
         } catch (SignatureProcessingException | IOException e) {
             throw new DocumentSignException("Не удалось подписать документ");
         }
@@ -217,7 +229,7 @@ public class DocumentService {
             signElement.setAttribute("uuid", signUUID);
             contract.appendChild(signElement);
             Element backlink = root.createElement("sig:Backlink");
-            backlink.appendChild(root.createTextNode("https://volnamobile.ru/"));
+            backlink.appendChild(root.createTextNode(backLinkURL));
             requestSigContract.appendChild(backlink);
             // ========== Блок вложений ClientMessage =========
             Element attachmentHeaderList = root.createElement("tns:AttachmentHeaderList");
@@ -309,7 +321,7 @@ public class DocumentService {
             signElement.setAttribute("uuid", signUUID);
             contract.appendChild(signElement);
             Element backlink = root.createElement("sig:Backlink");
-            backlink.appendChild(root.createTextNode("https://volnamobile.ru/"));
+            backlink.appendChild(root.createTextNode(backLinkURL));
             requestSigContract.appendChild(backlink);
             // ========== Блок вложений ClientMessage =========
             Element attachmentHeaderList = root.createElement("tns:AttachmentHeaderList");

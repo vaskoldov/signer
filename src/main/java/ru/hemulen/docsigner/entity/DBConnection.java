@@ -64,7 +64,7 @@ public class DBConnection implements AutoCloseable {
 
     public ResultSet getAttachments(String id) {
         try {
-            String sql = String.format("select file_name from \"core\".attachment_metadata where message_metadata_id = '%s'", id);
+            String sql = String.format("select id, file_name from \"core\".attachment_metadata where message_metadata_id = '%s'", id);
             Statement statement = connection.createStatement();
             return statement.executeQuery(sql);
         } catch (SQLException e) {
