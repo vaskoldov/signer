@@ -9,6 +9,7 @@ public class Document {
     private String documentPath;
     private String documentContent;
     private String documentDescription;
+    private String signExp;
     private String clientId;
     private String signContent;
 
@@ -85,5 +86,13 @@ public class Document {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public String getSignExp() {
+        return signExp;
+    }
+
+    public void setSignExp(String signExp) {
+        this.signExp = signExp;
     }
 }

@@ -3,11 +3,8 @@ package ru.hemulen.docsigner.service;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Element;
 import ru.hemulen.crypto.exceptions.SignatureProcessingException;
+import ru.hemulen.docsigner.exception.*;
 import ru.hemulen.docsigner.model.Document;
-import ru.hemulen.docsigner.exception.DocumentFileNotExists;
-import ru.hemulen.docsigner.exception.DocumentSignException;
-import ru.hemulen.docsigner.exception.FileOperationsException;
-import ru.hemulen.docsigner.exception.XMLTransformationException;
 import ru.hemulen.signer.Signer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -63,7 +60,7 @@ public class DocumentService {
         encoder = Base64.getEncoder();
     }
 
-    public String processDocument(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocument(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException, IncorrectParameterException {
         document.setClientId(UUID.randomUUID().toString());
         // Проверяем наличие файла с документом в каталоге
         File documentFile = new File(document.getDocumentPath());
@@ -85,6 +82,22 @@ public class DocumentService {
                 throw new FileOperationsException("Не удалось сохранить содержимое документа в файл.");
             }
         }
+        // Проверяем наличие параметра signExp
+        if (document.getSignExp() == null) {
+            // Увеличиваем текущее время на 24 часа
+            try {
+                document.setSignExp(getExpireTimestamp(getCurrentTimestamp()));
+            } catch (ParseException e) {
+                throw new IncorrectParameterException();
+            }
+        }
+        // Проверяем корректность даты signExp
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        try {
+            Date current = dateFormat.parse(document.getSignExp());
+        } catch (ParseException e) {
+            throw new IncorrectParameterException("Некорректный форматы даты signExp! Допустимый формат \"yyyy-MM-dd'T'HH:mm:ss\".");
+        }
         // Подписываем документ
         File signFile = signDocument(document);
         // Кодируем подпись в base64 и возвращаем в ответе
@@ -95,7 +108,7 @@ public class DocumentService {
         return  document.getClientId();
     }
 
-    public String processDocumentUKEP(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException {
+    public String processDocumentUKEP(Document document) throws DocumentSignException, DocumentFileNotExists, XMLTransformationException, FileOperationsException, IncorrectParameterException {
         document.setClientId(UUID.randomUUID().toString());
         // Проверяем наличие файла с документом в каталоге
         File documentFile = new File(document.getDocumentPath());
@@ -116,6 +129,22 @@ public class DocumentService {
             } catch (IOException e) {
                 throw new FileOperationsException("Не удалось сохранить содержимое документа в файл.");
             }
+        }
+        // Проверяем наличие параметра signExp
+        if (document.getSignExp() == null) {
+            // Увеличиваем текущее время на 24 часа
+            try {
+                document.setSignExp(getExpireTimestamp(getCurrentTimestamp()));
+            } catch (ParseException e) {
+                throw new IncorrectParameterException();
+            }
+        }
+        // Проверяем корректность даты signExp
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        try {
+            Date current = dateFormat.parse(document.getSignExp());
+        } catch (ParseException e) {
+            throw new IncorrectParameterException();
         }
         // Подписываем документ
         File signFile = signDocument(document);
@@ -177,7 +206,7 @@ public class DocumentService {
             String contractUUID = UUID.randomUUID().toString();
             String signUUID = UUID.randomUUID().toString();
             String currentTime = getCurrentTimestamp();
-            String expireTime = getExpireTimestamp(currentTime);
+            //String expireTime = getExpireTimestamp(currentTime);
             // ========= Заголовок ClientMessage и метаданные запроса =========
             org.w3c.dom.Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element rootElement = root.createElementNS("urn://x-artefacts-smev-gov-ru/services/service-adapter/types", "tns:ClientMessage");
@@ -208,7 +237,8 @@ public class DocumentService {
             OID.appendChild(root.createTextNode(document.getOid()));
             requestSigContract.appendChild(OID);
             Element signExp = root.createElement("sig:signExp");
-            signExp.appendChild(root.createTextNode(expireTime));
+            //signExp.appendChild(root.createTextNode(expireTime)); -- предельное время подписания документа теперь передается в запросе
+            signExp.appendChild(root.createTextNode(document.getSignExp()));
             requestSigContract.appendChild(signExp);
             Element descDoc = root.createElement("sig:descDoc");
             descDoc.appendChild(root.createTextNode(document.getDescDoc()));
@@ -257,7 +287,7 @@ public class DocumentService {
             signTransferMethod.appendChild(root.createTextNode("REFERENCE"));
             signAttachmentHeader.appendChild(signTransferMethod);
             return getStringFromDocument(root);
-        } catch (ParserConfigurationException | TransformerException | ParseException e) {
+        } catch (ParserConfigurationException | TransformerException e) {
             throw new XMLTransformationException("Не удалось сформировать XML с запросом");
         }
     }
@@ -269,7 +299,7 @@ public class DocumentService {
             String contractUUID = UUID.randomUUID().toString();
             String signUUID = UUID.randomUUID().toString();
             String currentTime = getCurrentTimestamp();
-            String expireTime = getExpireTimestamp(currentTime);
+            //String expireTime = getExpireTimestamp(currentTime);
             // ========= Заголовок ClientMessage и метаданные запроса =========
             org.w3c.dom.Document root = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element rootElement = root.createElementNS("urn://x-artefacts-smev-gov-ru/services/service-adapter/types", "tns:ClientMessage");
@@ -300,7 +330,8 @@ public class DocumentService {
             OID.appendChild(root.createTextNode(document.getOid()));
             requestSigContract.appendChild(OID);
             Element signExp = root.createElement("sig:signExp");
-            signExp.appendChild(root.createTextNode(expireTime));
+            //signExp.appendChild(root.createTextNode(expireTime));
+            signExp.appendChild(root.createTextNode(document.getSignExp()));
             requestSigContract.appendChild(signExp);
             Element descDoc = root.createElement("sig:descDoc");
             descDoc.appendChild(root.createTextNode(document.getDescDoc()));
@@ -349,7 +380,7 @@ public class DocumentService {
             signTransferMethod.appendChild(root.createTextNode("REFERENCE"));
             signAttachmentHeader.appendChild(signTransferMethod);
             return getStringFromDocument(root);
-        } catch (ParserConfigurationException | TransformerException | ParseException e) {
+        } catch (ParserConfigurationException | TransformerException e) {
             throw new XMLTransformationException("Не удалось сформировать XML с запросом");
         }
     }
@@ -374,7 +405,7 @@ public class DocumentService {
         Date current = dateFormat.parse(currentTimestamp);
         Calendar expired = Calendar.getInstance();
         expired.setTime(current);
-        expired.add(Calendar.DATE, 14); // У абонента есть две недели на подписание документа
+        expired.add(Calendar.DATE, 1); // У абонента есть сутки на подписание документа
         return dateFormat.format(expired.getTime());
     }
 

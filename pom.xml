@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>ru.hemulen</groupId>
 	<artifactId>docsigner</artifactId>
-	<version>1.0.7</version>
+	<version>1.0.8</version>
 	<name>docsigner</name>
 	<description>REST service for SMEV adapter</description>
 	<properties>
