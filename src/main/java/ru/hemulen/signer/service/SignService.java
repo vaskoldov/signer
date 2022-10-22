@@ -1,5 +1,6 @@
 package ru.hemulen.signer.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -9,6 +10,7 @@ import ru.hemulen.signer.exception.*;
 import ru.hemulen.signer.model.Request;
 import ru.hemulen.signer.signer.Signer;
 
+import javax.annotation.PostConstruct;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
@@ -20,26 +22,33 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Properties;
 
 @Service
 public class SignService {
     Signer signer;
     String containerAlias;
     String containerPassword;
-    String adapterOutPath;
 
     public SignService()  {
-        containerAlias = "fsor012012";
-        containerPassword = "12345678";
-//        containerAlias = "AUVOLNAMOBILE01_2023_02_22";
-//        containerPassword = "12345678";
+        // Загружаем алиас и пароль подписи из файла конфигурации
+        Properties props = new Properties();
+        try {
+            props.load(new FileInputStream("./config/config.ini"));
+        } catch (IOException e) {
+            System.err.println("Не удалось прочитать файл конфигурации.");
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+        containerAlias = props.getProperty("CONTAINER_ALIAS");
+        containerPassword = props.getProperty("CONTAINER_PASSWORD");
         try {
             signer = new Signer(containerAlias, containerPassword);
 
         } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {}
     }
 
-    public String processPKCS7(Request request) throws DocumentSignException, DocumentFileNotExists {
+       public String processPKCS7(Request request) throws DocumentSignException, DocumentFileNotExists {
         File signFile = signPKCS7(request);
         return  signFile.toPath().toString();
     }
@@ -71,7 +80,7 @@ public class SignService {
             if (element == null) {
                 throw new XMLTransformationException(String.format("Не удалось преобразовать файл %s в DOM объект", request.getFilePath()));
             }
-            Element xmlSign = signer.signXMLDSigDetached(element, "PERSONAL_SIGNATURE");
+            Element xmlSign = signer.signXMLDSigDetached(element, null);
             File signFile = new File(request.getFilePath() + ".sig");
             elementToFile(xmlSign, signFile);
             return signFile;

@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>ru.hemulen</groupId>
 	<artifactId>signer</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.4</version>
 	<name>signer</name>
-	<description>REST service for signing artefacts</description>
+	<description>REST service for signing artefacts (doesn't work) + folder scanning</description>
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
