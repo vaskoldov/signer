@@ -10,6 +10,8 @@ import ru.hemulen.crypto.impl.DigitalSignatureProcessorImpl;
 import ru.hemulen.crypto.impl.SmevTransformSpi;
 import ru.hemulen.crypto.impl.jcp.KeyStoreWrapperJCP;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -22,7 +24,15 @@ public class DigitalSignatureFactory {
     private static volatile KeyStoreWrapper keyStoreWrapper = null;
 
     public static synchronized void init() throws SigLibInitializationException {
-        String keyStoreName = "HDImageStore";
+        // Настраиваем хранилище контейнеров ключей
+        Properties props = new Properties();
+        String keyStoreName;
+        try {
+            props.load(new FileReader("./config/config.ini"));
+            keyStoreName = props.getProperty("keyStoreName");
+        } catch (IOException e) {
+            throw new SigLibInitializationException("Ошибка при инициализации signatureProcessor");
+        }
 
         // Выполняем инициализацию фабрики
         System.setProperty("org.apache.xml.security.ignoreLineBreaks", "true");
