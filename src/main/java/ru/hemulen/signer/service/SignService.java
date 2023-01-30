@@ -1,5 +1,7 @@
 package ru.hemulen.signer.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Element;
@@ -26,6 +28,7 @@ import java.util.Properties;
 
 @Service
 public class SignService {
+    private static final Logger logger = LoggerFactory.getLogger(SignService.class);
     Signer signer;
     String containerAlias;
     String containerPassword;
@@ -45,7 +48,10 @@ public class SignService {
         try {
             signer = new Signer(containerAlias, containerPassword);
 
-        } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {}
+        } catch (UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
+            logger.error("Ошибка при создании инстанса Signer");
+            e.printStackTrace(System.err);
+        }
     }
 
        public String processPKCS7(Request request) throws DocumentSignException, DocumentFileNotExists {
@@ -67,6 +73,7 @@ public class SignService {
             File docSign = signer.signPKCS7Detached(file);
             return docSign;
         } catch (SignatureProcessingException | IOException e) {
+            e.printStackTrace(System.err);
             throw new DocumentSignException("Не удалось подписать документ");
         }
     }
@@ -85,6 +92,7 @@ public class SignService {
             elementToFile(xmlSign, signFile);
             return signFile;
         } catch (SignatureProcessingException | IOException | ParserConfigurationException | SAXException | XMLTransformationException e) {
+            e.printStackTrace(System.err);
             throw new DocumentSignException("Не удалось подписать документ");
         }
     }
