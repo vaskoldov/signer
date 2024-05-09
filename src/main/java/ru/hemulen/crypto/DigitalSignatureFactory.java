@@ -19,7 +19,7 @@ import java.security.cert.CertificateException;
 import java.util.Properties;
 
 public class DigitalSignatureFactory {
-    private static String providerName = "JCP2";
+    private static final String providerName = "JCP2";
     private static volatile DigitalSignatureProcessor signatureProcessor = null;
     private static volatile KeyStoreWrapper keyStoreWrapper = null;
 
@@ -29,7 +29,7 @@ public class DigitalSignatureFactory {
         String keyStoreName;
         try {
             props.load(new FileReader("./config/config.ini"));
-            keyStoreName = props.getProperty("keyStoreName");
+            keyStoreName = props.getProperty("KEY_STORE_NAME") != null ? props.getProperty("KEY_STORE_NAME") : "HDImageStore";
         } catch (IOException e) {
             throw new SigLibInitializationException("Ошибка при инициализации signatureProcessor");
         }
