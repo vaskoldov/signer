@@ -2,28 +2,30 @@ package ru.hemulen.signer.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.hemulen.crypto.exceptions.SignatureProcessingException;
 import ru.hemulen.signer.exception.*;
 import ru.hemulen.signer.model.Request;
 import ru.hemulen.signer.signer.Signer;
 
-import javax.annotation.PostConstruct;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Base64;
 import java.util.Properties;
 
 @Service
@@ -33,7 +35,7 @@ public class SignService {
     String containerAlias;
     String containerPassword;
 
-    public SignService()  {
+    public SignService() {
         // Загружаем алиас и пароль подписи из файла конфигурации
         Properties props = new Properties();
         try {
@@ -54,30 +56,40 @@ public class SignService {
         }
     }
 
-       public String processPKCS7(Request request) throws DocumentSignException, DocumentFileNotExists {
-        File signFile = signPKCS7(request);
-        return  signFile.toPath().toString();
+    public String processPKCS7(Request request) throws DocumentSignException {
+        return Base64.getEncoder().encode(signPKCS7(request)).toString();
     }
 
-    public String processXMLDSig(Request request) throws DocumentSignException, DocumentFileNotExists, InvalidRequestParameters, InvalidXMLException {
+    public byte[] processPKCS7(MultipartFile fileToSign) throws DocumentSignException {
+        try {
+            InputStream stream = fileToSign.getInputStream();
+            return signer.signPKCS7Detached(stream, signer.getPrivateKey(), signer.getCertificate());
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+            throw new DocumentSignException("Не удалось обработать файл из запроса");
+        } catch (SignatureProcessingException e) {
+            e.printStackTrace(System.err);
+            throw new DocumentSignException("Не удалось подписать файл из запроса");
+        }
+    }
+
+
+/*    public String processXMLDSig(Request request) throws DocumentSignException, DocumentFileNotExists, InvalidRequestParameters, InvalidXMLException {
         File signFile = signXMLDSig(request);
         return signFile.toPath().toString();
-    }
+    }*/
 
-    private File signPKCS7 (Request request) throws DocumentFileNotExists, DocumentSignException {
-        File file = Paths.get(request.getFilePath()).toFile();
-        if (!file.exists()) {
-            throw new DocumentFileNotExists("Указанный файл c документом не найден");
-        }
+    private byte[] signPKCS7(Request request) throws DocumentSignException {
+        InputStream stream = new ByteArrayInputStream(Base64.getDecoder().decode(request.getFileContent().getBytes(StandardCharsets.UTF_8)));
         try {
-            File docSign = signer.signPKCS7Detached(file);
-            return docSign;
-        } catch (SignatureProcessingException | IOException e) {
+            return signer.signPKCS7Detached(stream, signer.getPrivateKey(), signer.getCertificate());
+        } catch (SignatureProcessingException e) {
             e.printStackTrace(System.err);
             throw new DocumentSignException("Не удалось подписать документ");
         }
     }
-    private File signXMLDSig (Request request) throws DocumentFileNotExists, DocumentSignException, InvalidXMLException, InvalidRequestParameters {
+
+    /*private File signXMLDSig (Request request) throws DocumentFileNotExists, DocumentSignException, InvalidXMLException, InvalidRequestParameters {
         File file = Paths.get(request.getFilePath()).toFile();
         if (!file.exists()) {
             throw new DocumentFileNotExists("Указанный файл c документом не найден");
@@ -96,7 +108,7 @@ public class SignService {
             throw new DocumentSignException("Не удалось подписать документ");
         }
     }
-
+*/
     private Element fileToElement(File file) throws IOException, ParserConfigurationException, SAXException {
         if (file == null) {
             return null;

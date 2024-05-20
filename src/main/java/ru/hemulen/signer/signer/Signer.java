@@ -42,15 +42,15 @@ public class Signer {
         certificate = keyStoreWrapper.getX509Certificate(keyAlias);
     }
 
-    public Element signXMLDSigDetached(Element document2Sign, String signatureId) throws SignatureProcessingException {
+/*    public Element signXMLDSigDetached(Element document2Sign, String signatureId) throws SignatureProcessingException {
         return digitalSignatureProcessor.signXMLDSigDetached(document2Sign, signatureId, privateKey, certificate);
-    }
+    }*/
 
     public byte[] signPKCS7Detached(InputStream argContent2Sign, PrivateKey argPrivateKey, X509Certificate argCertificate) throws SignatureProcessingException {
         return digitalSignatureProcessor.signPKCS7Detached(argContent2Sign, argPrivateKey, argCertificate);
     }
 
-    public File signPKCS7Detached(File file2sign) throws SignatureProcessingException, IOException {
+/*    public File signPKCS7Detached(File file2sign) throws SignatureProcessingException, IOException {
         InputStream inputStream = new FileInputStream(file2sign);
         byte[] result = digitalSignatureProcessor.signPKCS7Detached(inputStream, privateKey, certificate);
         // Файл с подписью создается в том же каталоге и с тем же именем, но с расширением sig
@@ -61,6 +61,14 @@ public class Signer {
         signOutputStream.flush();
         signOutputStream.close();
         return signFile;
+    }*/
+    
+    public PrivateKey getPrivateKey() {
+        return this.privateKey;
+    }
+    
+    public X509Certificate getCertificate() {
+        return this.certificate;
     }
 
 }

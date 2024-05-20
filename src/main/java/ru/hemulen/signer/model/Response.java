@@ -1,18 +1,18 @@
 package ru.hemulen.signer.model;
 
 public class Response {
-    private String signPath;
+    private String sign;
     private Error error;
 
     public Response() {
     }
 
-    public String getSignPath() {
-        return signPath;
+    public String getSign() {
+        return this.sign;
     }
 
-    public void setSignPath(String signPath) {
-        this.signPath = signPath;
+    public void setSign(String sign) {
+        this.sign = sign;
     }
 
     public Error getError() {
