@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>ru.hemulen</groupId>
 	<artifactId>signer</artifactId>
-	<version>2.0.0</version>
+	<version>2.1.0</version>
 	<name>signer</name>
-	<description>REST service for signing artefacts (doesn't work) + folder scanning</description>
+	<description>REST service for signing multi-part file</description>
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
@@ -30,6 +30,10 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -51,6 +55,11 @@
 			<artifactId>xmlsec</artifactId>
 			<version>1.4.5</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.auth0</groupId>
+			<artifactId>java-jwt</artifactId>
+			<version>3.18.3</version>
 		</dependency>
 	</dependencies>
 
