@@ -8,6 +8,7 @@ import ru.hemulen.crypto.exceptions.SignatureValidationException;
 import ru.hemulen.crypto.impl.ValidationResult;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -126,7 +127,7 @@ public interface DigitalSignatureProcessor {
     /**
      * Обернуть InputStream в обёртку, которая будет при чтении потока на лету подсчитывать message digest.
      * Смысл операции в том, чтобы избежать дополнительного чтения файла для проверки ЭЦП или подписания.
-     * После чтения файла (и закрытия потоков), PipeInputStream можно передать методам  signPKCS7Detached или validatePKCS7Signature
+     * После чтения файла (и закрытия потоков), PipeInputStream можно передать методам signPKCS7Detached или validatePKCS7Signature
      * с соответствующими сигнатурами. При этом готовый message digest будет взят из PipeInputStream.
      *
      * @param argStreamToBeWrapped поток, который нужно обернуть.
@@ -148,6 +149,17 @@ public interface DigitalSignatureProcessor {
      *                                      Кроме того, выбрасывается, если какой-либо из аргументов - null.
      */
     byte[] signPKCS7Detached(byte[] argContent2Sign, PrivateKey argPrivateKey, X509Certificate argCertificate) throws SignatureProcessingException;
+
+    /**
+     * Подписать поток байтов, вызвать сервис штампов времени, вернуть ЭЦП в формате PKCS#7 со штампом времени
+     * @param argContent2Sign Поток байтов на подпись.
+     * @param argPrivateKey   Секретный ключ.
+     * @param argCertificate  Сертификат подписи.
+     * @param tspAddress      IP-адрес провайдера штампов времени
+     * @return Подпись        PKCS#7 со штампом времени, сериализованный в поток байтов
+     * @throws SignatureProcessingException
+     */
+    byte[] signPKCS7DetachedWithTimestamp(byte[] argContent2Sign, PrivateKey argPrivateKey, X509Certificate argCertificate, URL tspAddress) throws SignatureProcessingException;
 
     /**
      * Проверяет ЭЦП формата PKCS#7.

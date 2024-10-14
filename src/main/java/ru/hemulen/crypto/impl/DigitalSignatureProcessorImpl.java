@@ -6,20 +6,35 @@ import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.transforms.Transforms;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import ru.CryptoPro.CAdES.exception.*;
 import ru.hemulen.crypto.exceptions.SignatureProcessingException;
 import ru.hemulen.crypto.exceptions.SignatureValidationException;
 import ru.hemulen.crypto.DigitalSignatureProcessor;
 
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+
+import ru.CryptoPro.CAdES.CAdESSignature;
+import ru.CryptoPro.CAdES.exception.*;
 
 public class DigitalSignatureProcessorImpl extends AbstractDigitalSignatureProcessor {
     protected static final String XMLDSIG_DETACHED_TRANSFORM_METHOD = "http://www.w3.org/2001/10/xml-exc-c14n#";
     protected static final String XMLDSIG_ENVELOPED_TRANSFORM_METHOD = "http://www.w3.org/2000/09/xmldsig#enveloped-signature";
     protected static final String WSSU_NS = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
     protected static final String EDS_ERROR_SIGNATURE_INVALID = "Ошибка проверки ЭП: Нарушена целостность ЭП";
+
+    protected static CAdESSignature cadesSignature;
+
+    public DigitalSignatureProcessorImpl() {
+        try {
+            cadesSignature = new CAdESSignature(true);
+        } catch (CAdESException e) {
+            cadesSignature = null;
+        }
+    }
 
     // ================================ Подпись XML
 
@@ -112,4 +127,8 @@ public class DigitalSignatureProcessorImpl extends AbstractDigitalSignatureProce
         return PKCS7Tools.verifyPKCS7BcProv(digest, signature);
     }
 
+    @Override
+    public byte[] signPKCS7DetachedWithTimestamp(byte[] argContent2Sign, PrivateKey argPrivateKey, X509Certificate argCertificate, URL tspAddress) throws SignatureProcessingException {
+        return new byte[0];
+    }
 }

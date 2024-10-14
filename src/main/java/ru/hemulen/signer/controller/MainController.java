@@ -47,6 +47,21 @@ public class MainController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAuthority('USER')")
+    @PostMapping("pkcs7/tsp")
+    public ResponseEntity signPKCS7WithTSP(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
+        try {
+            byte[] sign = signService.processPKCS7WithTSP(file);
+            byte[] encoded = Base64.getEncoder().encode(sign);
+            response.setContentType("application/octet-stream");
+            response.setContentLength(encoded.length);
+            response.getOutputStream().write(encoded);
+            response.flushBuffer();
+        } catch (DocumentSignException|IOException е) {
+            return ResponseEntity.internalServerError().build();
+        }
+        return ResponseEntity.ok(response);
+    }
     /*
     //Этот метод не используется и поэтому пока вырезан
     @PostMapping("xmldsig")

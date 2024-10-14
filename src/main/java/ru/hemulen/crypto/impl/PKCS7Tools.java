@@ -104,7 +104,7 @@ public class PKCS7Tools {
 
                 // Проверяем что подписанные данные есть.
                 if (signer.getSignedAttributes() == null) {
-                    throw new SignatureValidationException("Подпись в формате PKCS#7 не содержет подписанных данных!");
+                    throw new SignatureValidationException("Подпись в формате PKCS#7 не содержит подписанных данных!");
                 }
                 // Извлекаем дайджест, использованный при подписи, сравниваем с актуальным.
                 org.bouncycastle.asn1.cms.Attribute attribute = signer.getSignedAttributes().get(new ASN1ObjectIdentifier("1.2.840.113549.1.9.4"));
@@ -120,7 +120,7 @@ public class PKCS7Tools {
                     // Каждый раз обновляем поток isCheckData.
                     InputStream isCheckData = new ByteArrayInputStream(signer.getEncodedSignedAttributes());
                     boolean signatureIsVerified = checkOnCert(isCheckData, providedCertificate, signatureAsByteArray);
-                    // TODO Loskutov Интересно почиму возвращается только первый удачно проверенный сертификат?
+                    // TODO Loskutov Интересно, почему возвращается только первый удачно проверенный сертификат?
                     if (signatureIsVerified && certificateToReturn == null) {
                         certificateToReturn = providedCertificate;
                     }

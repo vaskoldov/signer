@@ -1,5 +1,6 @@
 package ru.hemulen.signer.service;
 
+import org.bouncycastle.tsp.TimeStampResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -64,6 +65,22 @@ public class SignService {
         try {
             InputStream stream = fileToSign.getInputStream();
             return signer.signPKCS7Detached(stream, signer.getPrivateKey(), signer.getCertificate());
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+            throw new DocumentSignException("Не удалось обработать файл из запроса");
+        } catch (SignatureProcessingException e) {
+            e.printStackTrace(System.err);
+            throw new DocumentSignException("Не удалось подписать файл из запроса");
+        }
+    }
+
+    public byte[] processPKCS7WithTSP(MultipartFile fileToSign) throws DocumentSignException {
+        try {
+            InputStream stream = fileToSign.getInputStream();
+            byte[] sign = signer.signPKCS7Detached(stream, signer.getPrivateKey(), signer.getCertificate());
+            // Теперь нужно каким-то образом проставить штамп времени
+            TimeStampResponse response = signer.getTimeStamp(sign);
+            return response.getEncoded();
         } catch (IOException e) {
             e.printStackTrace(System.err);
             throw new DocumentSignException("Не удалось обработать файл из запроса");
